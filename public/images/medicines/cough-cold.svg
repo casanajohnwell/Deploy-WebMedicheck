@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <g id="pill">
+      <rect x="-23" y="-12" width="46" height="24" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <ellipse rx="17" ry="9" fill="#dc2626"/>
+      <ellipse cx="-6" cy="-3" rx="6" ry="2.5" fill="#fff" opacity=".45"/>
+    </g>
+  </defs>
+  <rect width="200" height="200" rx="32" fill="#fdf6f6"/>
+  <circle cx="150" cy="52" r="34" fill="#fee2e2"/>
+  <ellipse cx="100" cy="164" rx="64" ry="7" fill="#000" opacity=".06"/>
+  <rect x="36" y="52" width="128" height="96" rx="14" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+  <use xlink:href="#pill" href="#pill" x="74" y="76"/>
+  <use xlink:href="#pill" href="#pill" x="126" y="76"/>
+  <use xlink:href="#pill" href="#pill" x="74" y="100"/>
+  <use xlink:href="#pill" href="#pill" x="126" y="100"/>
+  <use xlink:href="#pill" href="#pill" x="74" y="124"/>
+  <use xlink:href="#pill" href="#pill" x="126" y="124"/>
+</svg>

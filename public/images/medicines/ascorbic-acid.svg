@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <g id="pill">
+      <circle r="13" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <circle r="9.5" fill="#fb923c"/>
+      <circle cx="-3" cy="-3" r="3" fill="#fff" opacity=".45"/>
+    </g>
+  </defs>
+  <rect width="200" height="200" rx="32" fill="#fdf6f6"/>
+  <ellipse cx="96" cy="166" rx="64" ry="7" fill="#000" opacity=".06"/>
+  <rect x="28" y="64" width="128" height="92" rx="14" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+  <use xlink:href="#pill" href="#pill" x="56" y="88"/>
+  <use xlink:href="#pill" href="#pill" x="92" y="88"/>
+  <use xlink:href="#pill" href="#pill" x="128" y="88"/>
+  <use xlink:href="#pill" href="#pill" x="56" y="124"/>
+  <use xlink:href="#pill" href="#pill" x="92" y="124"/>
+  <use xlink:href="#pill" href="#pill" x="128" y="124"/>
+  <circle cx="150" cy="52" r="30" fill="#f97316"/>
+  <circle cx="150" cy="52" r="24" fill="#fdba74"/>
+  <path d="M150 28V76M126 52H174M133 35L167 69M167 35L133 69" stroke="#fff7ed" stroke-width="2.5"/>
+  <circle cx="150" cy="52" r="4" fill="#fff7ed"/>
+</svg>

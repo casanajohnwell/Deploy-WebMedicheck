@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Models\Booking;
+use App\Models\Medicine;
+use Illuminate\Http\Request;
+use Inertia\Middleware;
+
+class HandleInertiaRequests extends Middleware
+{
+    /**
+     * The root template that's loaded on the first page visit.
+     *
+     * @see https://inertiajs.com/server-side-setup#root-template
+     *
+     * @var string
+     */
+    protected $rootView = 'app';
+
+    /**
+     * Determines the current asset version.
+     *
+     * @see https://inertiajs.com/asset-versioning
+     */
+    public function version(Request $request): ?string
+    {
+        return parent::version($request);
+    }
+
+    /**
+     * Define the props that are shared by default.
+     *
+     * @see https://inertiajs.com/shared-data
+     *
+     * @return array<string, mixed>
+     */
+    public function share(Request $request): array
+    {
+        $admin = $request->user()?->isAdmin() ? $request->user() : null;
+        $station = $admin?->toStationArray();
+        $healthCenter = $station['health_center'] ?? null;
+
+        if ($admin && $healthCenter) {
+            Booking::expireOverdue($healthCenter);
+        }
+
+        return [
+            ...parent::share($request),
+            'name' => config('app.name'),
+            'auth' => [
+                'user' => $request->user()?->toSafeAuthArray(),
+            ],
+            'station' => $station,
+            'medicines' => $admin && $healthCenter
+                ? Medicine::query()
+                    ->where('health_center', $healthCenter)
+                    ->latest()
+                    ->get()
+                    ->map(fn (Medicine $medicine) => $medicine->toFrontend())
+                    ->values()
+                    ->all()
+                : [],
+            'bookings' => $admin && $healthCenter
+                ? Booking::query()
+                    ->where('health_center', $healthCenter)
+                    ->latest()
+                    ->get()
+                    ->map(fn (Booking $booking) => $booking->toFrontend())
+                    ->values()
+                    ->all()
+                : [],
+            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'adminNotice' => ($request->user()?->isAdmin() || $request->user()?->isSuperAdmin())
+                ? $request->user()->notices()->whereNull('read_at')->latest()->first(['id', 'message'])
+                : null,
+        ];
+    }
+}
