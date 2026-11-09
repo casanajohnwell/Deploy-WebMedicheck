@@ -8,17 +8,22 @@ use App\Models\DeclinedAdmin;
 use App\Models\Medicine;
 use App\Models\MonthlyReport;
 use App\Models\User;
+use App\Notifications\AdminAccountApproved;
+use App\Notifications\AdminAccountDeclined;
 use App\Services\MonthlyReportRecorder;
 use App\Support\AdminPositions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class SuperAdminController extends Controller
 {
@@ -258,7 +263,11 @@ class SuperAdminController extends Controller
             'message' => "Your administrator account for {$center} was approved. You can sign in now.",
         ]);
 
-        return back()->with('status', 'Barangay administrator approved.');
+        $emailed = $this->emailAccountDecision($user, new AdminAccountApproved($center));
+
+        return back()->with('status', $emailed
+            ? 'Barangay administrator approved. An email was sent to let them know.'
+            : 'Barangay administrator approved, but the email could not be sent.');
     }
 
     public function declineAccount(Request $request, User $user): RedirectResponse
@@ -270,6 +279,7 @@ class SuperAdminController extends Controller
         ]);
 
         $wasApproved = (bool) $user->is_approved;
+        $reason = filled($validated['reason'] ?? null) ? trim($validated['reason']) : null;
 
         DeclinedAdmin::query()->create([
             'name' => $user->name,
@@ -281,9 +291,14 @@ class SuperAdminController extends Controller
             'province' => $user->province,
             'health_center' => $user->healthCenter(),
             'previous_status' => $wasApproved ? 'approved' : 'pending',
-            'reason' => filled($validated['reason'] ?? null) ? trim($validated['reason']) : null,
+            'reason' => $reason,
             'declined_at' => now(),
         ]);
+
+        $this->emailAccountDecision(
+            $user,
+            new AdminAccountDeclined($user->healthCenter() ?? 'your barangay health center', $reason),
+        );
 
         $user->delete();
 
@@ -293,6 +308,19 @@ class SuperAdminController extends Controller
                 ? 'NURSE account rejected. It is now listed under Rejected accounts.'
                 : 'Administrator rejected. The account is listed under Rejected accounts.',
         );
+    }
+
+    private function emailAccountDecision(User $user, Notification $notification): bool
+    {
+        try {
+            $user->notify($notification);
+
+            return true;
+        } catch (Throwable $exception) {
+            Log::warning('Could not email the account decision.', ['user_id' => $user->id, 'error' => $exception->getMessage()]);
+
+            return false;
+        }
     }
 
     public function destroyDeclined(DeclinedAdmin $declinedAdmin): RedirectResponse
