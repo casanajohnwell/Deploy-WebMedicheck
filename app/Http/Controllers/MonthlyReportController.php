@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\MonthlyReport;
 use App\Services\MonthlyReportRecorder;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -21,19 +20,6 @@ class MonthlyReportController extends Controller
             'year' => $year,
             'month' => $month,
             'report' => $report->toFrontend(),
-        ]);
-    }
-
-    public function print(Request $request, MonthlyReportRecorder $recorder): View
-    {
-        ['year' => $year, 'month' => $month, 'healthCenter' => $healthCenter, 'report' => $report] = $this->resolve($request, $recorder);
-
-        return view('reports.monthly-print', [
-            'healthCenter' => $healthCenter,
-            'monthTitle' => Carbon::createFromDate($year, $month, 1)->format('F Y'),
-            'summary' => $report->toFrontend()['summary'],
-            'preparedBy' => $request->user()->name,
-            'generatedAt' => now('Asia/Manila')->format('M j, Y g:i A'),
         ]);
     }
 
@@ -76,7 +62,7 @@ class MonthlyReportController extends Controller
      * @param  array<string, mixed>  $summary
      * @return array<string, int>
      */
-    public static function summaryRows(array $summary): array
+    private function summaryRows(array $summary): array
     {
         return [
             'Bookings' => (int) ($summary['bookings'] ?? 0),

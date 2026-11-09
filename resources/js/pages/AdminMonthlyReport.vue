@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     CheckCircle2,
     ChevronDown,
@@ -10,8 +10,8 @@ import {
     Download,
     FileText,
     PackageCheck,
+    FileDown,
     PackageX,
-    Printer,
     ShieldAlert,
     Trophy,
     UserX,
@@ -21,6 +21,7 @@ import AdminPageHeader from '@/components/AdminPageHeader.vue';
 import { computed, ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'vue-sonner';
 
 type ReportLine = {
     id: number;
@@ -54,6 +55,7 @@ type ReportSummary = {
 
 type MonthlyReport = {
     id: number;
+    healthCenter: string;
     label: string;
     year: number;
     month: number;
@@ -218,6 +220,37 @@ const mostTaken = computed((): MostTaken | null => {
             left.medicine.localeCompare(right.medicine),
     )[0] ?? null;
 });
+
+const page = usePage();
+const downloadingPdf = ref(false);
+
+async function downloadPdf(): Promise<void> {
+    const current = summary.value;
+
+    if (!current) {
+        return;
+    }
+
+    downloadingPdf.value = true;
+
+    try {
+        const { downloadMonthlyReportPdf } = await import('@/lib/monthlyReportPdf');
+
+        await downloadMonthlyReportPdf({
+            healthCenter: report.value.healthCenter,
+            monthTitle: monthTitle.value,
+            fileMonth: `${props.year}-${String(props.month).padStart(2, '0')}`,
+            preparedBy: String(page.props.auth?.user?.name ?? ''),
+            mostTaken: mostTaken.value,
+            summaryRows: statCards.value.map((card) => [card.label, Number(card.value)]),
+            lines: current.lines,
+        });
+    } catch {
+        toast.error('The PDF could not be created. Please try again.');
+    } finally {
+        downloadingPdf.value = false;
+    }
+}
 </script>
 
 <template>
@@ -294,15 +327,15 @@ const mostTaken = computed((): MostTaken | null => {
                     </li>
                 </ul>
             </div>
-            <a
-                :href="`/admin/reports/print?year=${year}&month=${month}`"
-                target="_blank"
-                rel="noopener"
-                class="inline-flex h-9 items-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white hover:bg-red-700"
+            <button
+                type="button"
+                class="inline-flex h-9 items-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                :disabled="!summary || downloadingPdf"
+                @click="downloadPdf"
             >
-                <Printer class="size-4" />
-                Print / PDF
-            </a>
+                <FileDown class="size-4" />
+                {{ downloadingPdf ? 'Preparing…' : 'Download PDF' }}
+            </button>
             <a
                 :href="`/admin/reports/export?year=${year}&month=${month}`"
                 class="inline-flex h-9 items-center gap-2 rounded-md border border-red-200/60 bg-card px-3 text-sm font-medium text-black hover:bg-red-50"

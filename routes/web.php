@@ -71,7 +71,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::inertia('dashboard', 'AdminDashboard')->name('dashboard');
         Route::inertia('metrics', 'AdminMetrics')->name('metrics');
         Route::get('reports', [MonthlyReportController::class, 'index'])->name('reports');
-        Route::get('reports/print', [MonthlyReportController::class, 'print'])->name('reports.print');
         Route::get('reports/export', [MonthlyReportController::class, 'export'])->name('reports.export');
         Route::inertia('bookings/approval', 'AdminBooking')->name('bookings.approval');
         Route::inertia('bookings/history', 'AdminBookingHistory')->name('bookings.history');

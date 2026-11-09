@@ -36,20 +36,6 @@ class MonthlyReportExportTest extends TestCase
         return $admin;
     }
 
-    public function test_admin_can_open_the_printable_report(): void
-    {
-        $admin = $this->adminWithSeptemberReport();
-
-        $this->actingAs($admin)
-            ->get(route('admin.reports.print', ['year' => 2026, 'month' => 9]))
-            ->assertOk()
-            ->assertSee('MediCheck Monthly Report')
-            ->assertSee('September 2026')
-            ->assertSee($admin->healthCenter())
-            ->assertSee('Ana Reyes')
-            ->assertSee('Nurse Joy');
-    }
-
     public function test_admin_can_download_the_report_as_csv(): void
     {
         $admin = $this->adminWithSeptemberReport();
