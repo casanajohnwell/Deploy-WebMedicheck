@@ -7,9 +7,11 @@ import {
     ChevronRight,
     ClipboardList,
     Clock,
+    Download,
     FileText,
     PackageCheck,
     PackageX,
+    Printer,
     ShieldAlert,
     Trophy,
     UserX,
@@ -292,6 +294,22 @@ const mostTaken = computed((): MostTaken | null => {
                     </li>
                 </ul>
             </div>
+            <a
+                :href="`/admin/reports/print?year=${year}&month=${month}`"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex h-9 items-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white hover:bg-red-700"
+            >
+                <Printer class="size-4" />
+                Print / PDF
+            </a>
+            <a
+                :href="`/admin/reports/export?year=${year}&month=${month}`"
+                class="inline-flex h-9 items-center gap-2 rounded-md border border-red-200/60 bg-card px-3 text-sm font-medium text-black hover:bg-red-50"
+            >
+                <Download class="size-4" />
+                Excel
+            </a>
         </div>
             </template>
         </AdminPageHeader>
