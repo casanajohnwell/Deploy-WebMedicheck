@@ -162,7 +162,7 @@ const links = computed(() => [
                             </button>
                         </Form>
                     </div>
-                    <nav class="flex gap-2 overflow-x-auto">
+                    <nav class="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         <Link
                             v-for="link in links"
                             :key="link.href"

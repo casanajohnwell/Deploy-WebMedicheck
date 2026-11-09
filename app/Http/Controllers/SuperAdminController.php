@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Models\AdminNotice;
 use App\Models\Booking;
 use App\Models\DeclinedAdmin;
 use App\Models\Medicine;
@@ -257,6 +258,7 @@ class SuperAdminController extends Controller
         abort_unless($user->isAdmin() && ! $user->is_approved, 404);
 
         $user->update(['is_approved' => true]);
+        AdminNotice::resolveRegistration($user);
 
         $center = $user->healthCenter() ?? 'your barangay health center';
         $user->notices()->create([
@@ -300,6 +302,7 @@ class SuperAdminController extends Controller
             new AdminAccountDeclined($user->healthCenter() ?? 'your barangay health center', $reason),
         );
 
+        AdminNotice::resolveRegistration($user);
         $user->delete();
 
         return back()->with(

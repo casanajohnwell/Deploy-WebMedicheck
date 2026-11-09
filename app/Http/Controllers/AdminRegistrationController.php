@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Models\AdminNotice;
 use App\Models\User;
 use App\Support\AdminPositions;
 use Illuminate\Http\RedirectResponse;
@@ -30,14 +31,12 @@ class AdminRegistrationController extends Controller
         }
 
         $user = $creator->create($request->all());
-        $center = $user->healthCenter() ?? 'a barangay health center';
-
         User::query()
             ->where('role', User::ROLE_SUPER_ADMIN)
             ->where('is_active', true)
-            ->each(function (User $super) use ($user, $center): void {
+            ->each(function (User $super) use ($user): void {
                 $super->notices()->create([
-                    'message' => "{$user->name} created an administrator account for {$center}. Approve or decline it.",
+                    'message' => AdminNotice::registrationMessage($user),
                 ]);
             });
 

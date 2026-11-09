@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminNotice;
 use App\Models\User;
 use App\Notifications\AdminAccountApproved;
 use App\Notifications\AdminAccountDeclined;
@@ -46,6 +47,18 @@ class AdminAccountDecisionEmailTest extends TestCase
             AdminAccountDeclined::class,
             fn (AdminAccountDeclined $notification) => $notification->reason === 'Wrong health center.',
         );
+    }
+
+    public function test_registration_notice_clears_once_the_admin_is_approved(): void
+    {
+        Notification::fake();
+        $superAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+        $admin = User::factory()->create(['is_approved' => false]);
+        $notice = $superAdmin->notices()->create(['message' => AdminNotice::registrationMessage($admin)]);
+
+        $this->actingAs($superAdmin)->post(route('superadmin.accounts.approve', $admin));
+
+        $this->assertNotNull($notice->fresh()->read_at);
     }
 
     public function test_approval_still_works_when_the_email_fails(): void

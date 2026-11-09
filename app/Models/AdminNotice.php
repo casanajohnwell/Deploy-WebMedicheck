@@ -20,6 +20,21 @@ class AdminNotice extends Model
         'read_at',
     ];
 
+    public static function registrationMessage(User $admin): string
+    {
+        $center = $admin->healthCenter() ?? 'a barangay health center';
+
+        return "{$admin->name} created an administrator account for {$center}. Approve or decline it.";
+    }
+
+    public static function resolveRegistration(User $admin): void
+    {
+        static::query()
+            ->whereNull('read_at')
+            ->where('message', static::registrationMessage($admin))
+            ->update(['read_at' => now()]);
+    }
+
     /**
      * @return BelongsTo<User, $this>
      */

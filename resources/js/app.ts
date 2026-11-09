@@ -6,7 +6,7 @@ import SettingsLayout from '@/layouts/settings/Layout.vue';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'MediCheck';
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
