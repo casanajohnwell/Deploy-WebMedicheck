@@ -120,7 +120,14 @@ class Medicine extends Model
             'quantity' => $this->quantity,
             'unit' => $this->unit,
             'expiration' => $this->expiration?->format('Y-m-d') ?? '',
-            'status' => $this->status ?: 'available',
+            'expiresInDays' => $this->expiration ? (int) today()->diffInDays($this->expiration, false) : null,
+            'status' => $this->isExpired() ? 'expired' : ($this->status ?: 'available'),
+            'stockStatus' => $this->status ?: 'available',
         ];
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expiration !== null && $this->expiration->lt(today());
     }
 }

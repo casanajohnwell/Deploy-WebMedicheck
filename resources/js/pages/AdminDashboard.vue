@@ -24,7 +24,13 @@ import { computed } from 'vue';
 import { useActiveAddress } from '@/composables/useActiveAddress';
 import { useSavedBookings } from '@/composables/useSavedBookings';
 import { useSavedMedicines } from '@/composables/useSavedMedicines';
-import { medicineStatusLabel } from '@/lib/medicheck-demo';
+import type { Medicine } from '@/lib/medicheck-demo';
+import {
+    EXPIRING_SOON_DAYS,
+    expiresInLabel,
+    isExpiringSoon,
+    medicineStatusLabel,
+} from '@/lib/medicheck-demo';
 
 defineOptions({
     layout: {
@@ -75,6 +81,27 @@ const lowStock = computed(() =>
             item.status === 'expired',
     ),
 );
+const expiringSoon = computed(() => medicines.value.filter(isExpiringSoon));
+const stockAlerts = computed(() => [
+    ...lowStock.value,
+    ...expiringSoon.value.filter((item) => !lowStock.value.includes(item)),
+]);
+
+function alertLabel(item: Medicine): string {
+    if (item.status === 'out_of_stock') {
+        return 'Out of stock';
+    }
+
+    if (item.status === 'expired') {
+        return 'Expired';
+    }
+
+    if (item.status !== 'low' && isExpiringSoon(item)) {
+        return expiresInLabel(item.expiresInDays ?? 0);
+    }
+
+    return `${item.quantity} left`;
+}
 
 const cards = computed(() => [
     {
@@ -237,9 +264,10 @@ const cards = computed(() => [
                 >
                     <div>
                         <CardTitle>Stock alerts</CardTitle>
-                        <CardDescription
-                            >Low stock or out of stock items</CardDescription
-                        >
+                        <CardDescription>
+                            Low stock, out of stock, expired, or expiring
+                            within {{ EXPIRING_SOON_DAYS }} days
+                        </CardDescription>
                     </div>
                     <Link
                         href="/admin/inventory"
@@ -250,7 +278,7 @@ const cards = computed(() => [
                 </CardHeader>
                 <CardContent class="space-y-3">
                     <div
-                        v-for="item in lowStock"
+                        v-for="item in stockAlerts"
                         :key="item.id"
                         class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-red-200/60 bg-red-600/10 p-3"
                     >
@@ -267,6 +295,12 @@ const cards = computed(() => [
                             >
                                 {{ item.healthCenter }}
                             </p>
+                            <p
+                                v-if="isExpiringSoon(item) && item.status === 'low'"
+                                class="text-xs text-amber-800"
+                            >
+                                {{ expiresInLabel(item.expiresInDays ?? 0) }}
+                            </p>
                         </div>
                         <Badge
                             class="shrink-0"
@@ -274,22 +308,16 @@ const cards = computed(() => [
                                 item.status === 'out_of_stock' ||
                                 item.status === 'expired'
                                     ? 'border-transparent bg-red-100 text-red-700'
-                                    : item.status === 'low'
-                                      ? 'border-transparent bg-amber-100 text-amber-800'
-                                      : 'border-transparent bg-emerald-100 text-emerald-800'
+                                    : 'border-transparent bg-amber-100 text-amber-800'
                             "
                         >
-                            {{
-                                item.status === 'out_of_stock'
-                                    ? 'Out of stock'
-                                    : item.status === 'low'
-                                      ? `${item.quantity} left`
-                                      : item.status === 'expired'
-                                        ? 'Expired'
-                                        : `${item.quantity} left`
-                            }}
+                            {{ alertLabel(item) }}
                         </Badge>
                     </div>
+                    <p v-if="!stockAlerts.length" class="text-muted-foreground text-sm">
+                        No stock alerts. Everything is in stock and not
+                        expiring soon.
+                    </p>
                 </CardContent>
             </Card>
         </div>
@@ -372,6 +400,15 @@ const cards = computed(() => [
                         <span>Restock low or out of stock</span>
                         <Badge class="border-transparent bg-amber-100 text-amber-800">
                             {{ lowStock.length }}
+                        </Badge>
+                    </Link>
+                    <Link
+                        href="/admin/inventory"
+                        class="flex items-center justify-between rounded-lg border border-red-100 p-3 hover:bg-red-50"
+                    >
+                        <span>Check medicines expiring soon</span>
+                        <Badge class="border-transparent bg-amber-100 text-amber-800">
+                            {{ expiringSoon.length }}
                         </Badge>
                     </Link>
                     <Link

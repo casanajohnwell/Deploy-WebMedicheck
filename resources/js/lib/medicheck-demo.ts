@@ -17,8 +17,28 @@ export type Medicine = {
     quantity: number;
     unit: string;
     expiration: string;
+    expiresInDays?: number | null;
     status: MedicineStatus;
+    stockStatus?: Exclude<MedicineStatus, 'expired'>;
 };
+
+export const EXPIRING_SOON_DAYS = 30;
+
+export function isExpiringSoon(item: Medicine): boolean {
+    return (
+        item.status !== 'expired' &&
+        item.expiresInDays != null &&
+        item.expiresInDays <= EXPIRING_SOON_DAYS
+    );
+}
+
+export function expiresInLabel(days: number): string {
+    if (days <= 0) {
+        return 'Expires today';
+    }
+
+    return days === 1 ? 'Expires tomorrow' : `Expires in ${days} days`;
+}
 
 export const medicineStatusOptions: {
     value: Exclude<MedicineStatus, 'expired'>;

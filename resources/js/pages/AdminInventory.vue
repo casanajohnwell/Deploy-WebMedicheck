@@ -20,6 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useActiveAddress } from '@/composables/useActiveAddress';
 import { useSavedMedicines } from '@/composables/useSavedMedicines';
 import {
+    expiresInLabel,
+    isExpiringSoon,
     medicineStatusLabel,
     medicineStatusOptions,
     type Medicine,
@@ -153,7 +155,7 @@ function saveItem() {
 }
 
 function countFor(status: Exclude<MedicineStatus, 'expired'>) {
-    return medicines.value.filter((item) => displayStatus(item.status) === status).length;
+    return medicines.value.filter((item) => displayStatus(item) === status).length;
 }
 
 function removeItem(id: number) {
@@ -197,10 +199,12 @@ const statusClass: Record<MedicineStatus, string> = {
     expired: 'border-transparent bg-red-100 text-red-700',
 };
 
-function displayStatus(
-    status: MedicineStatus,
-): Exclude<MedicineStatus, 'expired'> {
-    return status === 'expired' ? 'out_of_stock' : status;
+function displayStatus(item: Medicine): Exclude<MedicineStatus, 'expired'> {
+    if (item.status !== 'expired') {
+        return item.status;
+    }
+
+    return item.stockStatus ?? 'out_of_stock';
 }
 </script>
 
@@ -306,21 +310,17 @@ function displayStatus(
                             {{ item.quantity }} {{ item.unit }} ·
                             {{ item.expiration }}
                         </p>
+                        <p v-if="isExpiringSoon(item)" class="text-xs text-amber-800">
+                            {{ expiresInLabel(item.expiresInDays ?? 0) }}
+                        </p>
                         <div class="flex flex-col gap-2">
-                            <Badge
-                                :class="statusClass[displayStatus(item.status)]"
-                                class="w-fit"
-                            >
-                                {{
-                                    medicineStatusLabel(
-                                        displayStatus(item.status),
-                                    )
-                                }}
+                            <Badge :class="statusClass[item.status]" class="w-fit">
+                                {{ medicineStatusLabel(item.status) }}
                             </Badge>
                             <select
                                 class="h-9 w-full rounded-md border px-2 text-sm"
-                                :class="statusClass[displayStatus(item.status)]"
-                                :value="displayStatus(item.status)"
+                                :class="statusClass[displayStatus(item)]"
+                                :value="displayStatus(item)"
                                 @change="
                                     setStatus(
                                         item,
@@ -409,30 +409,28 @@ function displayStatus(
                                 <td class="px-4 py-3">
                                     {{ item.quantity }} {{ item.unit }}
                                 </td>
-                                <td class="px-4 py-3">{{ item.expiration }}</td>
+                                <td class="px-4 py-3">
+                                    {{ item.expiration }}
+                                    <p
+                                        v-if="isExpiringSoon(item)"
+                                        class="text-xs text-amber-800"
+                                    >
+                                        {{ expiresInLabel(item.expiresInDays ?? 0) }}
+                                    </p>
+                                </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">
-                                        <Badge
-                                            :class="
-                                                statusClass[
-                                                    displayStatus(item.status)
-                                                ]
-                                            "
-                                        >
-                                            {{
-                                                medicineStatusLabel(
-                                                    displayStatus(item.status),
-                                                )
-                                            }}
+                                        <Badge :class="statusClass[item.status]">
+                                            {{ medicineStatusLabel(item.status) }}
                                         </Badge>
                                         <select
                                             class="h-9 rounded-md border px-2 text-sm"
                                             :class="
                                                 statusClass[
-                                                    displayStatus(item.status)
+                                                    displayStatus(item)
                                                 ]
                                             "
-                                            :value="displayStatus(item.status)"
+                                            :value="displayStatus(item)"
                                             @change="
                                                 setStatus(
                                                     item,
