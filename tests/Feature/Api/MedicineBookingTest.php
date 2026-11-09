@@ -53,11 +53,11 @@ class MedicineBookingTest extends TestCase
             'user_id' => $user->id,
             'medicine_id' => $medicine->id,
             'status' => Booking::STATUS_PENDING,
-            'stock_reserved' => true,
+            'stock_reserved' => false,
         ]);
         $this->assertDatabaseHas('medicines', [
             'id' => $medicine->id,
-            'quantity' => 36,
+            'quantity' => 40,
         ]);
     }
 
@@ -138,7 +138,33 @@ class MedicineBookingTest extends TestCase
         ]);
         $this->assertDatabaseHas('medicines', [
             'id' => $medicine->id,
-            'quantity' => 40,
+            'quantity' => 50,
+        ]);
+    }
+
+    public function test_stock_is_deducted_only_when_the_medicine_is_claimed(): void
+    {
+        $admin = User::factory()->create();
+        $medicine = Medicine::factory()->create(['quantity' => 50]);
+        $booking = Booking::factory()->create([
+            'medicine_id' => $medicine->id,
+            'medicine_name' => $medicine->name,
+            'quantity' => 10,
+            'health_center' => $medicine->health_center,
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.bookings.update', $booking), ['status' => 'approved']);
+        $this->assertSame(50, $medicine->fresh()->quantity);
+
+        $this->actingAs($admin)
+            ->put(route('admin.bookings.update', $booking), ['status' => 'claimed'])
+            ->assertRedirect();
+
+        $this->assertSame(40, $medicine->fresh()->quantity);
+        $this->assertDatabaseHas('bookings', [
+            'id' => $booking->id,
+            'status' => Booking::STATUS_CLAIMED,
+            'stock_reserved' => true,
         ]);
     }
 
