@@ -89,9 +89,15 @@ class BookingController extends Controller
                 ]);
             }
 
-            if ($medicine->expiration?->isPast() || $medicine->quantity < $validated['quantity']) {
+            if ($medicine->isExpired()) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'This medicine is not available in the requested quantity.',
+                    'medicine_id' => 'This medicine has expired and cannot be requested.',
+                ]);
+            }
+
+            if ($medicine->quantity < $validated['quantity']) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Only '.$medicine->quantity.' left. Please request a smaller quantity.',
                 ]);
             }
 

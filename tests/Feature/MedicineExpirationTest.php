@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Medicine;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -45,5 +46,27 @@ class MedicineExpirationTest extends TestCase
 
         $this->assertFalse($medicine->isExpired());
         $this->assertSame(0, $medicine->toFrontend()['expiresInDays']);
+    }
+
+    public function test_seeker_can_book_a_medicine_expiring_today(): void
+    {
+        $this->travelTo(today()->setTime(21, 40));
+        $user = User::factory()->seeker()->create();
+        $medicine = Medicine::factory()->create(['quantity' => 380, 'expiration' => today()]);
+
+        $this->withToken($user->createToken('android')->plainTextToken)
+            ->postJson('/api/bookings', ['medicine_id' => $medicine->id, 'quantity' => 10, 'phone' => '09171234567'])
+            ->assertCreated();
+    }
+
+    public function test_seeker_cannot_book_an_expired_medicine(): void
+    {
+        $user = User::factory()->seeker()->create();
+        $medicine = Medicine::factory()->create(['quantity' => 380, 'expiration' => today()->subDay()]);
+
+        $this->withToken($user->createToken('android')->plainTextToken)
+            ->postJson('/api/bookings', ['medicine_id' => $medicine->id, 'quantity' => 10, 'phone' => '09171234567'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('medicine_id');
     }
 }
