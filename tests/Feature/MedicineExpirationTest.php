@@ -59,6 +59,18 @@ class MedicineExpirationTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_super_admin_sees_expired_medicines_as_expired(): void
+    {
+        $admin = User::factory()->create(['is_approved' => true, 'is_active' => true]);
+        $center = $admin->healthCenter();
+        Medicine::factory()->create(['health_center' => $center, 'status' => 'available', 'expiration' => today()->subDay()]);
+        $super = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+
+        $this->actingAs($super)
+            ->get(route('superadmin.dashboard', ['center' => $center]))
+            ->assertInertia(fn ($page) => $page->where('center.medicines.0.status', 'expired'));
+    }
+
     public function test_seeker_cannot_book_an_expired_medicine(): void
     {
         $user = User::factory()->seeker()->create();

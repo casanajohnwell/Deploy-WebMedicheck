@@ -128,6 +128,10 @@ function centerHref(healthCenter: string, year = props.year, month = props.month
 }
 
 function stockLabel(status: string) {
+    if (status === 'expired') {
+        return 'Expired';
+    }
+
     if (status === 'low') {
         return 'Low stock';
     }
@@ -140,6 +144,10 @@ function stockLabel(status: string) {
 }
 
 function stockClass(status: string) {
+    if (status === 'expired') {
+        return 'bg-zinc-200 text-zinc-700';
+    }
+
     if (status === 'low') {
         return 'bg-amber-100 text-amber-800';
     }

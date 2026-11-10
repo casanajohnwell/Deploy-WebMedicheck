@@ -115,7 +115,7 @@ class SuperAdminController extends Controller
                         'category' => $medicine->category,
                         'quantity' => $medicine->quantity,
                         'unit' => $medicine->unit,
-                        'status' => $medicine->status,
+                        'status' => $medicine->isExpired() ? 'expired' : $medicine->status,
                         'expiration' => $medicine->expiration?->toDateString(),
                     ])
                     ->all(),
