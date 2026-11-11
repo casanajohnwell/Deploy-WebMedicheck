@@ -150,7 +150,14 @@ function sendSms() {
             <p v-else>
                 Request #{{ prefill.bookingId }} is now {{ prefill.status }}. The message is ready below. Review it, then click Send SMS.
             </p>
-            <Link href="/admin/bookings/approval" class="font-medium underline">Back to booking approval</Link>
+            <Link
+                v-if="prefill.status === 'claimed' || prefill.status === 'unclaimed'"
+                href="/admin/bookings/history"
+                class="font-medium underline"
+            >
+                Back to booking history
+            </Link>
+            <Link v-else href="/admin/bookings/approval" class="font-medium underline">Back to booking approval</Link>
         </div>
 
         <div class="grid min-w-0 items-start gap-4 lg:grid-cols-5">

@@ -75,6 +75,36 @@ class AdminImprovementsTest extends TestCase
                 ->where('prefill.alreadySent', false));
     }
 
+    public function test_claimed_and_unclaimed_bookings_prefill_a_manual_sms(): void
+    {
+        $admin = User::factory()->create();
+        $medicine = Medicine::factory()->create(['name' => 'ORS Sachet', 'quantity' => 30]);
+
+        foreach (['claimed' => 'was claimed at', 'unclaimed' => 'was unclaimed at'] as $status => $phrase) {
+            $booking = Booking::factory()->create([
+                'medicine_id' => $medicine->id,
+                'medicine_name' => $medicine->name,
+                'health_center' => $admin->healthCenter(),
+                'quantity' => 2,
+            ]);
+            $booking->approve(3);
+
+            $this->actingAs($admin)
+                ->put(route('admin.bookings.update', $booking), ['status' => $status])
+                ->assertRedirect();
+
+            $this->actingAs($admin)
+                ->get(route('admin.sms', ['booking' => $booking->id]))
+                ->assertOk()
+                ->assertInertia(fn ($page) => $page
+                    ->component('AdminSms')
+                    ->where('prefill.status', $status)
+                    ->where('prefill.type', $status)
+                    ->where('prefill.message', fn (string $message) => str_contains($message, "ORS Sachet {$phrase}"))
+                    ->where('prefill.alreadySent', false));
+        }
+    }
+
     public function test_admin_can_send_a_manual_sms(): void
     {
         $admin = User::factory()->create();
