@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import {
-    Bell,
     CheckCircle2,
     ClipboardList,
     FileText,
@@ -415,10 +414,7 @@ const cards = computed(() => [
                         href="/admin/sms"
                         class="flex items-center justify-between rounded-lg border border-red-100 p-3 hover:bg-red-50"
                     >
-                        <span class="flex items-center gap-2">
-                            <Bell class="size-4 text-red-600/80" />
-                            SMS sent to seekers
-                        </span>
+                        <span>SMS sent to seekers</span>
                         <span class="text-xs text-neutral-500">Open</span>
                     </Link>
                     <p class="text-muted-foreground text-xs">
