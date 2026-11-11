@@ -259,7 +259,6 @@ async function downloadPdf(): Promise<void> {
     <div class="flex min-w-0 flex-1 flex-col gap-6 p-3 sm:p-4 md:p-6">
         <AdminPageHeader
             title="Monthly report"
-            :description="`Report for ${monthTitle}. Each month stays saved, and a new month does not delete the old one.`"
             :icon="FileText"
         >
             <template #actions>
