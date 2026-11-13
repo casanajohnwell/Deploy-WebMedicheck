@@ -135,14 +135,15 @@ class MedicineBookingTest extends TestCase
         $this->assertDatabaseHas('bookings', [
             'id' => $booking->id,
             'status' => Booking::STATUS_APPROVED,
+            'stock_reserved' => true,
         ]);
         $this->assertDatabaseHas('medicines', [
             'id' => $medicine->id,
-            'quantity' => 50,
+            'quantity' => 40,
         ]);
     }
 
-    public function test_stock_is_deducted_only_when_the_medicine_is_claimed(): void
+    public function test_stock_is_deducted_on_approval_and_not_again_on_claim(): void
     {
         $admin = User::factory()->create();
         $medicine = Medicine::factory()->create(['quantity' => 50]);
@@ -154,7 +155,7 @@ class MedicineBookingTest extends TestCase
         ]);
 
         $this->actingAs($admin)->put(route('admin.bookings.update', $booking), ['status' => 'approved']);
-        $this->assertSame(50, $medicine->fresh()->quantity);
+        $this->assertSame(40, $medicine->fresh()->quantity);
 
         $this->actingAs($admin)
             ->put(route('admin.bookings.update', $booking), ['status' => 'claimed'])
@@ -188,14 +189,38 @@ class MedicineBookingTest extends TestCase
             ->assertSessionHasErrors('status');
 
         $this->assertSame(Booking::STATUS_PENDING, $ben->fresh()->status);
-        $this->assertSame(30, $medicine->fresh()->quantity);
+        $this->assertSame(10, $medicine->fresh()->quantity);
         $this->assertSame(10, $medicine->fresh()->availableQuantity());
 
         $this->actingAs($admin)->put(route('admin.bookings.update', $ana), ['status' => 'unclaimed']);
+        $this->assertSame(30, $medicine->fresh()->quantity);
 
         $this->actingAs($admin)->put(route('admin.bookings.update', $ben), ['status' => 'approved'])
             ->assertSessionHasNoErrors();
         $this->assertSame(Booking::STATUS_APPROVED, $ben->fresh()->status);
+        $this->assertSame(10, $medicine->fresh()->quantity);
+    }
+
+    public function test_other_seekers_see_the_reduced_stock_right_after_approval(): void
+    {
+        $admin = User::factory()->create();
+        $seeker = User::factory()->seeker()->create();
+        $medicine = Medicine::factory()->create(['name' => 'Paracetamol', 'quantity' => 30]);
+        $booking = Booking::factory()->create([
+            'medicine_id' => $medicine->id,
+            'medicine_name' => $medicine->name,
+            'quantity' => 20,
+            'health_center' => $medicine->health_center,
+            'status' => Booking::STATUS_PENDING,
+            'stock_reserved' => false,
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.bookings.update', $booking), ['status' => 'approved']);
+
+        $this->withToken($seeker->createToken('android')->plainTextToken)
+            ->getJson('/api/medicines')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Paracetamol', 'quantity' => 10, 'status' => 'low']);
     }
 
     public function test_mobile_sees_and_requests_against_available_stock_only(): void

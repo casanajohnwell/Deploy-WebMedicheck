@@ -220,6 +220,8 @@ class Booking extends Model
 
             if ($next === self::STATUS_APPROVED) {
                 $booking->ensureStockAvailable();
+                $booking->deductStock();
+                $booking->stock_reserved = true;
             }
 
             if ($next === self::STATUS_CLAIMED && ! $booking->stock_reserved) {
