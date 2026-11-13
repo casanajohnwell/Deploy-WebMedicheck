@@ -14,6 +14,7 @@ class MedicineController extends Controller
         $healthCenter = $request->user()?->healthCenter();
 
         $medicines = Medicine::query()
+            ->withReserved()
             ->whereDate('expiration', '>=', now()->toDateString())
             ->when(
                 filled($healthCenter),
@@ -25,7 +26,7 @@ class MedicineController extends Controller
             })
             ->orderBy('name')
             ->get()
-            ->map(fn (Medicine $medicine) => $medicine->toFrontend())
+            ->map(fn (Medicine $medicine) => $medicine->toSeekerArray())
             ->values();
 
         return response()->json([

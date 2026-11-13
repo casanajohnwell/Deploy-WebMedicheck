@@ -310,6 +310,10 @@ function displayStatus(item: Medicine): Exclude<MedicineStatus, 'expired'> {
                             {{ item.quantity }} {{ item.unit }} ·
                             {{ item.expiration }}
                         </p>
+                        <p v-if="item.reserved" class="text-xs text-blue-700">
+                            Available: {{ item.available }} · Reserved:
+                            {{ item.reserved }}
+                        </p>
                         <p v-if="isExpiringSoon(item)" class="text-xs text-amber-800">
                             {{ expiresInLabel(item.expiresInDays ?? 0) }}
                         </p>
@@ -408,6 +412,13 @@ function displayStatus(item: Medicine): Exclude<MedicineStatus, 'expired'> {
                                 </td>
                                 <td class="px-4 py-3">
                                     {{ item.quantity }} {{ item.unit }}
+                                    <p
+                                        v-if="item.reserved"
+                                        class="text-xs text-blue-700"
+                                    >
+                                        Available: {{ item.available }} ·
+                                        Reserved: {{ item.reserved }}
+                                    </p>
                                 </td>
                                 <td class="px-4 py-3">
                                     {{ item.expiration }}

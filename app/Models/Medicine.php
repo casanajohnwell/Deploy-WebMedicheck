@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\MedicineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -46,13 +47,47 @@ class Medicine extends Model
 
     public function syncStockStatus(): void
     {
-        if ($this->quantity <= 0) {
-            $this->status = 'out_of_stock';
+        $this->status = self::stockStatusFor($this->quantity);
+    }
 
-            return;
+    public static function stockStatusFor(int $quantity): string
+    {
+        if ($quantity <= 0) {
+            return 'out_of_stock';
         }
 
-        $this->status = $this->quantity <= 20 ? 'low' : 'available';
+        return $quantity <= 20 ? 'low' : 'available';
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeWithReserved(Builder $query): void
+    {
+        $query->withSum(['bookings as reserved_quantity' => fn (Builder $bookings) => $bookings
+            ->where('status', Booking::STATUS_APPROVED)
+            ->where('stock_reserved', false)], 'quantity');
+    }
+
+    /**
+     * Pieces promised to approved requests that are still waiting for pickup.
+     * Stock is only deducted at claim, so these are still counted in $quantity.
+     */
+    public function reservedQuantity(): int
+    {
+        if (array_key_exists('reserved_quantity', $this->attributes)) {
+            return (int) $this->attributes['reserved_quantity'];
+        }
+
+        return (int) $this->bookings()
+            ->where('status', Booking::STATUS_APPROVED)
+            ->where('stock_reserved', false)
+            ->sum('quantity');
+    }
+
+    public function availableQuantity(): int
+    {
+        return max(0, $this->quantity - $this->reservedQuantity());
     }
 
     /**
@@ -123,6 +158,24 @@ class Medicine extends Model
             'expiresInDays' => $this->expiration ? (int) today()->diffInDays($this->expiration, false) : null,
             'status' => $this->isExpired() ? 'expired' : ($this->status ?: 'available'),
             'stockStatus' => $this->status ?: 'available',
+            'reserved' => $this->reservedQuantity(),
+            'available' => $this->availableQuantity(),
+        ];
+    }
+
+    /**
+     * Mobile view: seekers see only what can still be requested.
+     *
+     * @return array<string, mixed>
+     */
+    public function toSeekerArray(): array
+    {
+        $available = $this->availableQuantity();
+
+        return [
+            ...$this->toFrontend(),
+            'quantity' => $available,
+            'status' => self::stockStatusFor($available),
         ];
     }
 

@@ -20,6 +20,8 @@ export type Medicine = {
     expiresInDays?: number | null;
     status: MedicineStatus;
     stockStatus?: Exclude<MedicineStatus, 'expired'>;
+    reserved?: number;
+    available?: number;
 };
 
 export const EXPIRING_SOON_DAYS = 30;

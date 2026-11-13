@@ -74,6 +74,7 @@ class BookingController extends Controller
             $requestedToday = Booking::query()
                 ->where('user_id', $user->id)
                 ->where('medicine_id', $medicine->id)
+                ->where('status', '!=', Booking::STATUS_DECLINED)
                 ->where('created_at', '>=', now('Asia/Manila')->startOfDay()->utc())
                 ->exists();
 
@@ -95,9 +96,17 @@ class BookingController extends Controller
                 ]);
             }
 
-            if ($medicine->quantity < $validated['quantity']) {
+            $available = $medicine->availableQuantity();
+
+            if ($available <= 0) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'Only '.$medicine->quantity.' left. Please request a smaller quantity.',
+                    'medicine_id' => 'All remaining stock is already reserved for approved requests. Please try again later.',
+                ]);
+            }
+
+            if ($available < $validated['quantity']) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Only '.$available.' left. Please request a smaller quantity.',
                 ]);
             }
 

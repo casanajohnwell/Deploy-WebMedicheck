@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\MonthlyReportRecorder;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -143,7 +144,7 @@ class Booking extends Model
         foreach ($overdue as $booking) {
             $booking->markUnclaimed();
             $booking->refresh();
-            app(\App\Services\MonthlyReportRecorder::class)->syncCurrent($booking->health_center);
+            app(MonthlyReportRecorder::class)->syncCurrent($booking->health_center);
         }
     }
 
@@ -277,9 +278,14 @@ class Booking extends Model
             ]);
         }
 
-        if ($medicine->quantity < $this->quantity) {
+        $reserved = $medicine->reservedQuantity();
+        $available = max(0, $medicine->quantity - $reserved);
+
+        if ($available < $this->quantity) {
             throw ValidationException::withMessages([
-                'status' => 'Not enough stock to approve this request.',
+                'status' => $reserved > 0
+                    ? 'Not enough stock to approve this request. Only '.$available.' available — '.$reserved.' already approved and waiting for pickup.'
+                    : 'Not enough stock to approve this request.',
             ]);
         }
     }

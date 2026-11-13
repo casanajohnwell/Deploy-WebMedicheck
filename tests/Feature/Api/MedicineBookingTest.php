@@ -168,6 +168,78 @@ class MedicineBookingTest extends TestCase
         ]);
     }
 
+    public function test_approvals_cannot_promise_more_than_the_stock_on_hand(): void
+    {
+        $admin = User::factory()->create();
+        $medicine = Medicine::factory()->create(['quantity' => 30]);
+        [$ana, $ben] = Booking::factory()->count(2)->create([
+            'medicine_id' => $medicine->id,
+            'medicine_name' => $medicine->name,
+            'quantity' => 20,
+            'health_center' => $medicine->health_center,
+            'status' => Booking::STATUS_PENDING,
+            'stock_reserved' => false,
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.bookings.update', $ana), ['status' => 'approved'])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->put(route('admin.bookings.update', $ben), ['status' => 'approved'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame(Booking::STATUS_PENDING, $ben->fresh()->status);
+        $this->assertSame(30, $medicine->fresh()->quantity);
+        $this->assertSame(10, $medicine->fresh()->availableQuantity());
+
+        $this->actingAs($admin)->put(route('admin.bookings.update', $ana), ['status' => 'unclaimed']);
+
+        $this->actingAs($admin)->put(route('admin.bookings.update', $ben), ['status' => 'approved'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame(Booking::STATUS_APPROVED, $ben->fresh()->status);
+    }
+
+    public function test_mobile_sees_and_requests_against_available_stock_only(): void
+    {
+        $seeker = User::factory()->seeker()->create();
+        $medicine = Medicine::factory()->create(['name' => 'Amoxicillin', 'quantity' => 30]);
+        Booking::factory()->create([
+            'medicine_id' => $medicine->id,
+            'medicine_name' => $medicine->name,
+            'quantity' => 20,
+            'health_center' => $medicine->health_center,
+            'status' => Booking::STATUS_APPROVED,
+            'stock_reserved' => false,
+        ]);
+        $this->withToken($seeker->createToken('android')->plainTextToken);
+
+        $this->getJson('/api/medicines')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Amoxicillin', 'quantity' => 10, 'status' => 'low']);
+
+        $this->postJson('/api/bookings', ['medicine_id' => $medicine->id, 'quantity' => 15, 'phone' => '09171234567'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('quantity');
+
+        $this->postJson('/api/bookings', ['medicine_id' => $medicine->id, 'quantity' => 10, 'phone' => '09171234567'])
+            ->assertCreated();
+    }
+
+    public function test_seeker_can_request_again_the_same_day_after_a_decline(): void
+    {
+        $seeker = User::factory()->seeker()->create();
+        $medicine = Medicine::factory()->create(['quantity' => 100]);
+        $this->withToken($seeker->createToken('android')->plainTextToken);
+
+        $id = $this->postJson('/api/bookings', ['medicine_id' => $medicine->id, 'quantity' => 20, 'phone' => '09171234567'])
+            ->assertCreated()
+            ->json('data.id');
+
+        Booking::query()->findOrFail($id)->update(['status' => Booking::STATUS_DECLINED]);
+
+        $this->postJson('/api/bookings', ['medicine_id' => $medicine->id, 'quantity' => 10, 'phone' => '09171234567'])
+            ->assertCreated();
+    }
+
     public function test_guest_cannot_access_mobile_endpoints(): void
     {
         $this->getJson('/api/medicines')->assertUnauthorized();

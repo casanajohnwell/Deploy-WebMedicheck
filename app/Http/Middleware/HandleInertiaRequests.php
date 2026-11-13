@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
             'station' => $station,
             'medicines' => $admin && $healthCenter
                 ? Medicine::query()
+                    ->withReserved()
                     ->where('health_center', $healthCenter)
                     ->latest()
                     ->get()
